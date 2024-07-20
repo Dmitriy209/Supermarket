@@ -34,7 +34,7 @@ namespace Supermarket
 
             while (isRunnning)
             {
-                GetNumbersClients();
+                ShowNumbersClients();
 
                 Console.WriteLine($"Баланс магазина - {_money}.");
 
@@ -66,7 +66,7 @@ namespace Supermarket
             }
         }
 
-        private void GetNumbersClients()
+        private void ShowNumbersClients()
         {
             if (_clients.Count == 0)
                 Console.WriteLine("Очередь пуста.");
@@ -91,13 +91,8 @@ namespace Supermarket
 
                     client.ShowBasket();
 
-                    Console.WriteLine($"\nСумма покупок {client.GetSumBasket()}.\n" +
+                    Console.WriteLine($"\nСумма покупок {client.CalculateSumBasket()}.\n" +
                         $"Баланс клиента {client.Money}\n");
-
-                    while (TryPay(client) == false)
-                        DeleteRandomProduct(client);
-
-                    client.ShowBasket();
 
                     Sell(_clients.Dequeue().Pay());
                 }
@@ -107,30 +102,6 @@ namespace Supermarket
         private void Sell(int price)
         {
             _money += price;
-        }
-
-        private void DeleteRandomProduct(Client client)
-        {
-            Product product = client.Basket[UserUtils.GenerateRandomNumber(0, client.Basket.Count)];
-
-            Console.WriteLine("Клиент убирает из корзины:");
-            product.ShowStats();
-
-            client.Basket.Remove(product);
-        }
-
-        private bool TryPay(Client client)
-        {
-            if (client.Money >= client.GetSumBasket())
-            {
-                Console.WriteLine("У клиента достаточно средств.");
-                return true;
-            }
-            else
-            {
-                Console.WriteLine("У клиента недостаточно средств.");
-                return false;
-            }
         }
 
         private int ReadNumberClients()
@@ -192,51 +163,104 @@ namespace Supermarket
 
     class Client
     {
-        private List<Product> _bag;
+        private List<Product> _bag = new List<Product>();
+        private List<Product> _basket;
 
         public Client(List<Product> basket)
         {
-            Money = CreateMoney();
-            Basket = basket;
+            Money = GenerateMoney();
+            _basket = basket;
         }
 
         public int Money { get; private set; }
-        public List<Product> Basket { get; private set; }
 
         public int Pay()
         {
-            Money -= GetSumBasket();
+            while (TryPay() == false)
+                DeleteRandomProduct();
 
-            return GetSumBasket();
+            Money -= CalculateSumBasket();
+
+            AddProductInBag();
+
+            return CalculateSumBasket();
         }
 
         public void ShowBasket()
         {
-            Console.WriteLine("Продукты в корзине.");
+            Console.WriteLine("Продукты в корзине:");
 
-            foreach (Product product in Basket)
+            foreach (Product product in _basket)
                 product.ShowStats();
         }
 
         public void ShowBag()
         {
-            Console.WriteLine("Продукты в сумке.");
+            if (TryShowBag())
+            {
+                Console.WriteLine("\nПродукты в сумке:");
 
-            foreach (Product product in _bag)
-                product.ShowStats();
+                foreach (Product product in _bag)
+                    product.ShowStats();
+            }
         }
 
-        public int GetSumBasket()
+        public int CalculateSumBasket()
         {
             int sumPrice = 0;
 
-            foreach (Product product in Basket)
+            foreach (Product product in _basket)
                 sumPrice += product.Price;
 
             return sumPrice;
         }
 
-        private int CreateMoney()
+        private void AddProductInBag()
+        {
+            foreach (Product product in _basket)
+                _bag.Add(product);
+
+            ShowBag();
+        }
+
+        private bool TryShowBag()
+        {
+            if (_bag.Count == 0)
+            {
+                Console.WriteLine("В сумке пусто.");
+                return false;
+            }
+            else
+            {
+                return true;
+            }
+        }
+
+        private void DeleteRandomProduct()
+        {
+            Product product = _basket[UserUtils.GenerateRandomNumber(0, _basket.Count)];
+
+            Console.WriteLine("Клиент убирает из корзины:");
+            product.ShowStats();
+
+            _basket.Remove(product);
+        }
+
+        private bool TryPay()
+        {
+            if (Money >= CalculateSumBasket())
+            {
+                Console.WriteLine("У клиента достаточно средств.");
+                return true;
+            }
+            else
+            {
+                Console.WriteLine("У клиента недостаточно средств.");
+                return false;
+            }
+        }
+
+        private int GenerateMoney()
         {
             int minLimitWallet = 200;
             int maxLimitWallet = 1000;
