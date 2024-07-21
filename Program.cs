@@ -94,12 +94,12 @@ namespace Supermarket
                     Console.WriteLine($"\nСумма покупок {client.CalculateSumBasket()}.\n" +
                         $"Баланс клиента {client.Money}\n");
 
-                    Sell(_clients.Dequeue().Pay());
+                    AddMoney(_clients.Dequeue().Pay());
                 }
             }
         }
 
-        private void Sell(int price)
+        private void AddMoney(int price)
         {
             _money += price;
         }
@@ -176,7 +176,7 @@ namespace Supermarket
 
         public int Pay()
         {
-            while (TryPay() == false)
+            while (CanPay() == false)
                 DeleteRandomProduct();
 
             Money -= CalculateSumBasket();
@@ -196,7 +196,7 @@ namespace Supermarket
 
         public void ShowBag()
         {
-            if (TryShowBag())
+            if (HaveProducts())
             {
                 Console.WriteLine("\nПродукты в сумке:");
 
@@ -223,7 +223,7 @@ namespace Supermarket
             ShowBag();
         }
 
-        private bool TryShowBag()
+        private bool HaveProducts()
         {
             if (_bag.Count == 0)
             {
@@ -246,7 +246,7 @@ namespace Supermarket
             _basket.Remove(product);
         }
 
-        private bool TryPay()
+        private bool CanPay()
         {
             if (Money >= CalculateSumBasket())
             {
